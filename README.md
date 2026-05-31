@@ -33,6 +33,12 @@ tables/
 docs/
 ```
 
+Direct indexes are available for the main supplementary folders:
+
+- [Code templates](code/README.md)
+- [Appendix figure gallery](figures/README.md)
+- [Supplementary material index](docs/appendix_material_index.md)
+
 ## Code Templates
 
 The `code` folder contains templates derived from the computational workflow used in the thesis:

@@ -1,0 +1,165 @@
+' ==========================================================================
+' MODULE:       DATA_REFINEMENT - Aerodynamic Data Processing and Visualization
+' PROCEDURE:    DATA_REFINEMENT
+' ARCHITECTURE: FlightStream to Excel Integration Routine
+' AUTHOR:       Omar Hernando de la Torre
+' DATE:         April 2026
+'
+' DESCRIPTION:  Template macro for cleaning FlightStream sweep data in Excel.
+'               It extracts coefficient columns, computes Cd and L/D, applies
+'               target-based conditional formatting and generates XY plots.
+'
+' INPUT:        Raw FlightStream sweep data pasted in the active worksheet.
+' OUTPUT:       Clean coefficient table, derived columns and report-ready plots.
+' ==========================================================================
+
+Sub DATA_REFINEMENT()
+    ' ======================================================================
+    ' USER INPUTS
+    ' ======================================================================
+    Dim START_AOA As Variant: START_AOA = Empty
+    Dim END_AOA As Variant: END_AOA = Empty
+    Dim STEP_AOA As Variant: STEP_AOA = Empty
+    Dim CL_TARGET As Variant: CL_TARGET = Empty
+
+    If IsEmpty(START_AOA) Or IsEmpty(END_AOA) Or IsEmpty(STEP_AOA) Or IsEmpty(CL_TARGET) Then
+        MsgBox "Fill START_AOA, END_AOA, STEP_AOA and CL_TARGET before running the macro.", vbExclamation
+        Exit Sub
+    End If
+
+    If STEP_AOA = 0 Then
+        MsgBox "STEP_AOA cannot be zero.", vbExclamation
+        Exit Sub
+    End If
+
+    Dim ws As Worksheet: Set ws = ActiveSheet
+    Dim tbl As ListObject
+    Dim startRow As Long, lastRow As Long, numRows As Long
+    Dim i As Integer
+    Dim chartObj As ChartObject
+    Dim headerRange As Range, dataRange As Range
+
+    Dim rawAlpha As Variant, rawCL As Variant, rawCDi As Variant, rawCD0 As Variant, rawCmy As Variant
+
+    Dim graphWidth As Double: graphWidth = 320
+    Dim graphHeight As Double: graphHeight = 220
+    Dim offsetRight As Double: offsetRight = 100
+
+    numRows = Abs((END_AOA - START_AOA) / STEP_AOA) + 1
+
+    ActiveWindow.DisplayGridlines = False
+    Application.ScreenUpdating = False
+
+    For Each chartObj In ws.ChartObjects: chartObj.Delete: Next chartObj
+    For Each tbl In ws.ListObjects: tbl.Unlist: Next tbl
+
+    startRow = 1
+    Do While startRow < 1000 And Not IsNumeric(ws.Cells(startRow, 1).Value)
+        startRow = startRow + 1
+    Loop
+
+    lastRow = startRow + (numRows - 1)
+
+    rawAlpha = ws.Range(ws.Cells(startRow, 1), ws.Cells(lastRow, 1)).Value
+    rawCL = ws.Range(ws.Cells(startRow, 7), ws.Cells(lastRow, 7)).Value
+    rawCDi = ws.Range(ws.Cells(startRow, 8), ws.Cells(lastRow, 8)).Value
+    rawCD0 = ws.Range(ws.Cells(startRow, 9), ws.Cells(lastRow, 9)).Value
+    rawCmy = ws.Range(ws.Cells(startRow, 11), ws.Cells(lastRow, 11)).Value
+
+    ws.Range(ws.Cells(startRow, 1), ws.Cells(lastRow, 20)).ClearContents
+    ws.Cells(startRow, 1).Resize(numRows, 1).Value = rawAlpha
+    ws.Cells(startRow, 2).Resize(numRows, 1).Value = rawCL
+    ws.Cells(startRow, 3).Resize(numRows, 1).Value = rawCDi
+    ws.Cells(startRow, 4).Resize(numRows, 1).Value = rawCD0
+    ws.Cells(startRow, 5).Resize(numRows, 1).Value = rawCmy
+
+    ws.Rows(startRow).Insert Shift:=xlDown
+    Set headerRange = ws.Range(ws.Cells(startRow, 1), ws.Cells(startRow, 7))
+
+    With headerRange
+        .Value = Array("AOA", "Cl", "Cdi", "Cd0", "Cmy", "Cd", "L/D")
+        .Interior.Color = 6684672
+        .Font.Color = RGB(255, 255, 255)
+        .Font.Bold = True
+        .HorizontalAlignment = xlCenter
+    End With
+
+    lastRow = startRow + numRows
+    Set dataRange = ws.Range(ws.Cells(startRow + 1, 1), ws.Cells(lastRow, 7))
+
+    ws.Range(ws.Cells(startRow + 1, 6), ws.Cells(lastRow, 6)).FormulaR1C1 = "=RC[-3]+RC[-2]"
+    ws.Range(ws.Cells(startRow + 1, 7), ws.Cells(lastRow, 7)).FormulaR1C1 = "=RC[-5]/RC[-1]"
+
+    With dataRange
+        .HorizontalAlignment = xlCenter
+        .Borders(xlEdgeBottom).LineStyle = xlContinuous
+    End With
+
+    ws.Range(ws.Cells(startRow + 1, 7), ws.Cells(lastRow, 7)).FormatConditions.AddColorScale(3).ColorScaleCriteria(3).FormatColor.Color = RGB(99, 190, 123)
+
+    With ws.Range(ws.Cells(startRow + 1, 2), ws.Cells(lastRow, 2)).FormatConditions.AddColorScale(3)
+        .ColorScaleCriteria(1).Type = xlConditionValueLowestValue
+        .ColorScaleCriteria(1).FormatColor.Color = RGB(248, 105, 107)
+        .ColorScaleCriteria(2).Type = xlConditionValueNumber
+        .ColorScaleCriteria(2).Value = CL_TARGET
+        .ColorScaleCriteria(2).FormatColor.Color = RGB(99, 190, 123)
+        .ColorScaleCriteria(3).Type = xlConditionValueHighestValue
+        .ColorScaleCriteria(3).FormatColor.Color = RGB(248, 105, 107)
+    End With
+
+    With ws.Range(ws.Cells(startRow + 1, 5), ws.Cells(lastRow, 5)).FormatConditions.AddColorScale(3)
+        .ColorScaleCriteria(1).Type = xlConditionValueLowestValue
+        .ColorScaleCriteria(1).FormatColor.Color = RGB(248, 105, 107)
+        .ColorScaleCriteria(2).Type = xlConditionValueNumber
+        .ColorScaleCriteria(2).Value = 0
+        .ColorScaleCriteria(2).FormatColor.Color = RGB(99, 190, 123)
+        .ColorScaleCriteria(3).Type = xlConditionValueHighestValue
+        .ColorScaleCriteria(3).FormatColor.Color = RGB(248, 105, 107)
+    End With
+
+    Dim titles As Variant: titles = Array("Drag: Cd", "Moment: Cmy", "Lift: Cl", "Efficiency: L/D")
+    Dim cols As Variant: cols = Array(6, 5, 2, 7)
+
+    For i = 0 To 3
+        Dim pL As Double: pL = IIf(i Mod 2 = 0, ws.Cells(startRow, 9).Left + offsetRight, ws.Cells(startRow, 9).Left + graphWidth + 10 + offsetRight)
+        Dim pT As Double: pT = IIf(i < 2, ws.Cells(startRow, 1).Top, ws.Cells(startRow, 1).Top + graphHeight + 10)
+
+        Set chartObj = ws.ChartObjects.Add(pL, pT, graphWidth, graphHeight)
+        With chartObj.Chart
+            .ChartType = xlXYScatterLines
+            .HasTitle = True
+            .ChartTitle.Text = titles(i)
+            .ChartTitle.Font.Size = 10
+            If .HasLegend Then .Legend.Delete
+
+            With .SeriesCollection.NewSeries
+                .XValues = ws.Range(ws.Cells(startRow + 1, 1), ws.Cells(lastRow, 1))
+                .Values = ws.Range(ws.Cells(startRow + 1, cols(i)), ws.Cells(lastRow, cols(i)))
+                .MarkerStyle = xlMarkerStyleCircle
+                .MarkerSize = 3
+                .Format.Line.Weight = 1
+            End With
+
+            With .Axes(xlCategory)
+                .MinimumScale = START_AOA
+                .MaximumScale = END_AOA
+                .MajorUnit = 1
+                .HasTitle = True
+                .AxisTitle.Text = "Alpha [deg]"
+                .AxisTitle.Font.Size = 8
+                .TickLabels.Font.Size = 8
+            End With
+
+            With .Axes(xlValue)
+                If i = 1 Then
+                    .CrossesAt = 0
+                End If
+                .TickLabels.Font.Size = 8
+            End With
+        End With
+    Next i
+
+    ws.Columns("A:G").AutoFit
+    Application.ScreenUpdating = True
+    MsgBox "Analysis process completed successfully.", vbInformation
+End Sub

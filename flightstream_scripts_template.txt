@@ -1,0 +1,324 @@
+# ==========================================================================
+# SCRIPT: FlightStream Canard Configuration - Mesh Preprocessing Template
+# AUTHOR: Omar Hernando de la Torre
+# DATE: April 2026
+# DESCRIPTION: Imports the component CCS meshes of the canard aircraft,
+#              applies the initial surface cleaning operations and prepares
+#              the model for the manual symmetry inspection carried out before
+#              solver execution.
+# ==========================================================================
+
+
+# 1. Mesh Operations
+
+SURFACE_CLEARALL
+
+# Import component-level CCS meshes generated from the OpenVSP Plot3D files
+CCS_IMPORT
+CLOSE_COMPONENT_ENDS ENABLE
+UPDATE_PROPERTIES ENABLE
+CLEAR_EXISTING DISABLE
+FILE <CANARD_AIRCRAFT_FUSELAGE_CCS_FILE>
+
+CCS_IMPORT
+CLOSE_COMPONENT_ENDS ENABLE
+UPDATE_PROPERTIES ENABLE
+CLEAR_EXISTING DISABLE
+FILE <CANARD_AIRCRAFT_WING_CCS_FILE>
+
+CCS_IMPORT
+CLOSE_COMPONENT_ENDS ENABLE
+UPDATE_PROPERTIES ENABLE
+CLEAR_EXISTING DISABLE
+FILE <CANARD_AIRCRAFT_CANARD_CCS_FILE>
+
+CCS_IMPORT
+CLOSE_COMPONENT_ENDS ENABLE
+UPDATE_PROPERTIES ENABLE
+CLEAR_EXISTING DISABLE
+FILE <CANARD_AIRCRAFT_VTP_CCS_FILE>
+
+# Correct global surface orientation before component naming and mesh union
+SURFACE_INVERT -1
+
+SURFACE_RENAME 1 Fuselage
+SURFACE_RENAME 2 Wing
+SURFACE_RENAME 3 Canard
+SURFACE_RENAME 4 Vtp
+
+
+# Join the imported components into a single surface database
+BOOLEAN_UNITE_MESH -1
+
+# Remove invalid zero-area or distorted faces before solver setup
+DELETE_DEGENERATE_FACES
+SELECT_GEOMETRY_BY_ID -1
+
+# Apply the symmetry-plane cut to the mesh before the half-model is checked manually
+SURFACE_CUT_BY_PLANE
+FRAME 1
+PLANE XZ
+OFFSET 0.0
+SURFACE -1
+
+
+# ==========================================================================
+# SCRIPT: FlightStream Canard Configuration - Solver Setup and Sweep Template
+# AUTHOR: Omar Hernando de la Torre
+# DATE: April 2026
+# DESCRIPTION: Defines the aerodynamic boundary conditions, cruise fluid
+#              properties, reference quantities, centre of gravity frame and
+#              angle-of-attack sweep for the canard aircraft after mesh
+#              preprocessing and manual symmetry verification.
+# ==========================================================================
+
+
+# 2. Trailing Edges and Wake Termination
+
+# Detect lifting-surface trailing edges and associated wake termination nodes
+AUTO_DETECT_TRAILING_EDGES
+AUTO_DETECT_WAKE_TERMINATION_NODES
+
+
+# 3. Fluid Properties
+
+# ISA cruise condition used for the Mach 0.82 aerodynamic analysis
+FLUID_PROPERTIES
+DENSITY <DENSITY_KG_M3>
+PRESSURE <PRESSURE_PA>
+TEMPERATURE <TEMPERATURE_K>
+VISCOSITY <DYNAMIC_VISCOSITY_KG_MS>
+SPECIFIC_HEAT_RATIO <SPECIFIC_HEAT_RATIO>
+
+# 4. Create and Edit Coordinate System for CG
+
+CREATE_NEW_COORDINATE_SYSTEM
+SET_COORDINATE_SYSTEM_NAME 2 <CG_FRAME_NAME>
+
+# Loads and moments are reported about this centre of gravity frame
+EDIT_COORDINATE_SYSTEM
+FRAME 2
+NAME <CG_FRAME_NAME>
+ORIGIN_X <CG_X_CANARD>
+ORIGIN_Y <CG_Y_CANARD>
+ORIGIN_Z <CG_Z_CANARD>
+VECTOR_X_X 1
+VECTOR_X_Y 0
+VECTOR_X_Z 0
+VECTOR_Y_X 0
+VECTOR_Y_Y 1
+VECTOR_Y_Z 0
+VECTOR_Z_X 0
+VECTOR_Z_Y 0
+VECTOR_Z_Z 1
+
+# 5. Runtime & Analysis Settings
+
+# Reference quantities are kept common with the aircraft-level comparison
+SOLVER_SET_REF_LENGTH <REFERENCE_LENGTH>
+SOLVER_SET_REF_AREA <REFERENCE_AREA>
+SET_SOLVER_ANALYSIS_LOADS_FRAME 2
+SET_VORTICITY_DRAG_BOUNDARIES <NUMBER_OF_VORTICITY_DRAG_BOUNDARIES>
+<VORTICITY_DRAG_BOUNDARY_IDS>
+SET_BOUNDARY_LAYER_TYPE TURBULENT
+SET_SOLVER_VISCOUS_COUPLING ENABLE
+SET_AXIAL_SEPARATION_BOUNDARIES <NUMBER_OF_AXIAL_SEPARATION_BOUNDARIES>
+<AXIAL_SEPARATION_BOUNDARY_IDS>
+SET_CROSSFLOW_SEPARATION_DIAMETER <CROSSFLOW_SEPARATION_DIAMETER>
+SET_CROSSFLOW_SEPARATION_BOUNDARIES <NUMBER_OF_CROSSFLOW_SEPARATION_BOUNDARIES>
+<CROSSFLOW_SEPARATION_BOUNDARY_IDS>
+
+
+# 6. Initialize Solver
+
+# Use mirror symmetry and the subsonic Prandtl-Glauert correction
+INITIALIZE_SOLVER
+SOLVER_MODEL SUBSONIC_PRANDTL_GLAUERT
+SURFACES -1
+WAKE_TERMINATION_X DEFAULT
+SYMMETRY MIRROR
+WALL_COLLISION_AVOIDANCE ENABLE
+STABILIZATION ENABLE <STABILIZATION_FACTOR>
+
+# 7. Simulation Sweep
+
+# Final high-resolution sweep used for the aircraft-level polar comparison
+EXECUTE_SOLVER_SWEEPER
+ANGLE_OF_ATTACK ENABLE
+SIDE_SLIP_ANGLE DISABLE
+VELOCITY ENABLE
+ANGLE_OF_ATTACK_START <AOA_START>
+ANGLE_OF_ATTACK_STOP <AOA_STOP>
+ANGLE_OF_ATTACK_DELTA <AOA_DELTA>
+SIDE_SLIP_ANGLE_START <BETA_START>
+SIDE_SLIP_ANGLE_STOP <BETA_STOP>
+SIDE_SLIP_ANGLE_DELTA <BETA_DELTA>
+VELOCITY_START <VELOCITY_START>
+VELOCITY_STOP <VELOCITY_STOP>
+VELOCITY_DELTA <VELOCITY_DELTA>
+EXPORT_SURFACE_DATA_PER_STEP DISABLE
+CLEAR_SOLUTION_AFTER_EACH_RUN DISABLE
+REFERENCE_VELOCITY_EQUALS_FREESTREAM ENABLE
+APPEND_TO_EXISTING_SWEEP DISABLE
+<CANARD_AIRCRAFT_OUTPUT_CSV>
+
+
+# ==========================================================================
+# SCRIPT: FlightStream Conventional Tail Configuration - Mesh Preprocessing Template
+# AUTHOR: Omar Hernando de la Torre
+# DATE: April 2026
+# DESCRIPTION: Imports the component CCS meshes of the conventional tail aft
+#              aircraft, applies the initial surface cleaning operations and
+#              prepares the model for the symmetry inspection carried out
+#              before solver execution.
+# ==========================================================================
+
+# 1. Mesh Operations
+
+SURFACE_CLEARALL
+
+# Import component-level CCS meshes for the conventional tail aft aircraft
+CCS_IMPORT
+CLOSE_COMPONENT_ENDS ENABLE
+UPDATE_PROPERTIES ENABLE
+CLEAR_EXISTING DISABLE
+FILE <TAIL_AIRCRAFT_FUSELAGE_CCS_FILE>
+
+CCS_IMPORT
+CLOSE_COMPONENT_ENDS ENABLE
+UPDATE_PROPERTIES ENABLE
+CLEAR_EXISTING DISABLE
+FILE <TAIL_AIRCRAFT_WING_CCS_FILE>
+
+CCS_IMPORT
+CLOSE_COMPONENT_ENDS ENABLE
+UPDATE_PROPERTIES ENABLE
+CLEAR_EXISTING DISABLE
+FILE <TAIL_AIRCRAFT_HTP_CCS_FILE>
+
+CCS_IMPORT
+CLOSE_COMPONENT_ENDS ENABLE
+UPDATE_PROPERTIES ENABLE
+CLEAR_EXISTING DISABLE
+FILE <TAIL_AIRCRAFT_VTP_CCS_FILE>
+
+# Correct global surface orientation before component naming and mesh union
+SURFACE_INVERT -1
+
+SURFACE_RENAME 1 Fuselage
+SURFACE_RENAME 2 Wing
+SURFACE_RENAME 3 Htp
+SURFACE_RENAME 4 Vtp
+
+# Join the imported components into a single surface database
+BOOLEAN_UNITE_MESH -1
+
+# Remove invalid zero-area or distorted faces before solver setup
+DELETE_DEGENERATE_FACES
+SELECT_GEOMETRY_BY_ID -1
+
+# Apply the symmetry-plane cut to the mesh before the half-model is checked manually
+SURFACE_CUT_BY_PLANE
+FRAME 1
+PLANE XZ
+OFFSET 0.0
+SURFACE -1
+
+
+# ==========================================================================
+# SCRIPT: FlightStream Conventional Tail Configuration - Solver Setup and Sweep Template
+# AUTHOR: Omar Hernando de la Torre
+# DATE: April 2026
+# DESCRIPTION: Defines the aerodynamic boundary conditions, cruise fluid
+#              properties, reference quantities, centre of gravity frame and
+#              final angle-of-attack sweep for the conventional tail aft
+#              aircraft.
+# ==========================================================================
+
+
+# 2. Trailing Edges and Wake Termination
+
+# Detect lifting-surface trailing edges and associated wake termination nodes
+AUTO_DETECT_TRAILING_EDGES
+AUTO_DETECT_WAKE_TERMINATION_NODES
+
+# 3. Fluid Properties
+
+# ISA cruise condition used for the Mach 0.82 aerodynamic analysis
+FLUID_PROPERTIES
+DENSITY <DENSITY_KG_M3>
+PRESSURE <PRESSURE_PA>
+TEMPERATURE <TEMPERATURE_K>
+VISCOSITY <DYNAMIC_VISCOSITY_KG_MS>
+SPECIFIC_HEAT_RATIO <SPECIFIC_HEAT_RATIO>
+
+# 4. Create and Edit Coordinate System for CG
+
+CREATE_NEW_COORDINATE_SYSTEM
+SET_COORDINATE_SYSTEM_NAME 2 <CG_FRAME_NAME>
+
+# Loads and moments are reported about this centre of gravity frame
+EDIT_COORDINATE_SYSTEM
+FRAME 2
+NAME <CG_FRAME_NAME>
+ORIGIN_X <CG_X_TAIL>
+ORIGIN_Y <CG_Y_TAIL>
+ORIGIN_Z <CG_Z_TAIL>
+VECTOR_X_X 1
+VECTOR_X_Y 0
+VECTOR_X_Z 0
+VECTOR_Y_X 0
+VECTOR_Y_Y 1
+VECTOR_Y_Z 0
+VECTOR_Z_X 0
+VECTOR_Z_Y 0
+VECTOR_Z_Z 1
+
+# 5. Runtime & Analysis Settings
+
+# Reference quantities are kept common with the aircraft-level comparison
+SOLVER_SET_REF_LENGTH <REFERENCE_LENGTH>
+SOLVER_SET_REF_AREA <REFERENCE_AREA>
+SET_SOLVER_ANALYSIS_LOADS_FRAME 2
+SET_VORTICITY_DRAG_BOUNDARIES <NUMBER_OF_VORTICITY_DRAG_BOUNDARIES>
+<VORTICITY_DRAG_BOUNDARY_IDS>
+SET_BOUNDARY_LAYER_TYPE TURBULENT
+SET_SOLVER_VISCOUS_COUPLING ENABLE
+SET_AXIAL_SEPARATION_BOUNDARIES <NUMBER_OF_AXIAL_SEPARATION_BOUNDARIES>
+<AXIAL_SEPARATION_BOUNDARY_IDS>
+SET_CROSSFLOW_SEPARATION_DIAMETER <CROSSFLOW_SEPARATION_DIAMETER>
+SET_CROSSFLOW_SEPARATION_BOUNDARIES <NUMBER_OF_CROSSFLOW_SEPARATION_BOUNDARIES>
+<CROSSFLOW_SEPARATION_BOUNDARY_IDS>
+
+# 6. Initialize Solver
+
+# Use mirror symmetry and the subsonic Prandtl-Glauert correction
+INITIALIZE_SOLVER
+SOLVER_MODEL SUBSONIC_PRANDTL_GLAUERT
+SURFACES -1
+WAKE_TERMINATION_X DEFAULT
+SYMMETRY MIRROR
+WALL_COLLISION_AVOIDANCE ENABLE
+STABILIZATION ENABLE <STABILIZATION_FACTOR>
+
+# 7. Simulation Sweep
+
+# Final high-resolution sweep used for the aircraft-level polar comparison
+EXECUTE_SOLVER_SWEEPER
+ANGLE_OF_ATTACK ENABLE
+SIDE_SLIP_ANGLE DISABLE
+VELOCITY ENABLE
+ANGLE_OF_ATTACK_START <AOA_START>
+ANGLE_OF_ATTACK_STOP <AOA_STOP>
+ANGLE_OF_ATTACK_DELTA <AOA_DELTA>
+SIDE_SLIP_ANGLE_START <BETA_START>
+SIDE_SLIP_ANGLE_STOP <BETA_STOP>
+SIDE_SLIP_ANGLE_DELTA <BETA_DELTA>
+VELOCITY_START <VELOCITY_START>
+VELOCITY_STOP <VELOCITY_STOP>
+VELOCITY_DELTA <VELOCITY_DELTA>
+EXPORT_SURFACE_DATA_PER_STEP DISABLE
+CLEAR_SOLUTION_AFTER_EACH_RUN DISABLE
+REFERENCE_VELOCITY_EQUALS_FREESTREAM ENABLE
+APPEND_TO_EXISTING_SWEEP DISABLE
+<TAIL_AIRCRAFT_OUTPUT_CSV>

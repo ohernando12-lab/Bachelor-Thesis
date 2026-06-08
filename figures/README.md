@@ -98,6 +98,20 @@ This folder contains the extended appendix figures associated with the thesis wo
 | --- | --- | --- |
 | ![Final Canard Aircraft Front View](FinalCanardConfigurationFSFrontView.jpeg) | ![Final Canard Aircraft Side View](FinalCanardConfigurationFSSideView.jpeg) | ![Final Canard Aircraft Top View](FinalCanardConfigurationFSTopView.jpeg) |
 
+## Final OpenVSP Aircraft Views
+
+### Conventional Tail Aircraft
+
+| Isometric View | Front View | Side View | Top View |
+| --- | --- | --- | --- |
+| ![Final Tail Aircraft OpenVSP Isometric View](FinalTailConfigurationOVSP.jpeg) | ![Final Tail Aircraft OpenVSP Front View](FinalTailConfigurationOVSPFrontView.jpeg) | ![Final Tail Aircraft OpenVSP Side View](FinalTailConfigurationOVSPSideView.jpeg) | ![Final Tail Aircraft OpenVSP Top View](FinalTailConfigurationOVSPTopView.jpeg) |
+
+### Canard Aircraft
+
+| Isometric View | Front View | Side View | Top View |
+| --- | --- | --- | --- |
+| ![Final Canard Aircraft OpenVSP Isometric View](FinalCanardConfigurationOVSP.jpeg) | ![Final Canard Aircraft OpenVSP Front View](FinalCanardConfigurationOVSPFrontView.jpeg) | ![Final Canard Aircraft OpenVSP Side View](FinalCanardConfigurationOVSPSideView.jpeg) | ![Final Canard Aircraft OpenVSP Top View](FinalCanardConfigurationOVSPTopView.jpeg) |
+
 ## Complete Aerodynamic Result Tables
 
 | Conventional Tail Aircraft | Canard Aircraft |

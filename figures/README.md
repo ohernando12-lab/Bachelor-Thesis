@@ -98,6 +98,12 @@ This folder contains the extended appendix figures associated with the thesis wo
 | --- | --- | --- |
 | ![Final Canard Aircraft Front View](FinalCanardConfigurationFSFrontView.jpeg) | ![Final Canard Aircraft Side View](FinalCanardConfigurationFSSideView.jpeg) | ![Final Canard Aircraft Top View](FinalCanardConfigurationFSTopView.jpeg) |
 
+## FlightStream Pressure Distributions
+
+| Conventional Tail Aircraft | Canard Aircraft |
+| --- | --- |
+| ![Tail Aircraft FlightStream Pressure Distribution](TailISOFSPressures.jpeg) | ![Canard Aircraft FlightStream Pressure Distribution](CanardsISOFSPressures.jpeg) |
+
 ## Final OpenVSP Aircraft Views
 
 ### Conventional Tail Aircraft
